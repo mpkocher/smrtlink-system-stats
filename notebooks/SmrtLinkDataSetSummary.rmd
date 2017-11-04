@@ -1,0 +1,151 @@
+---
+title: "SMRT Link System DataSet Summary"
+output:
+  html_notebook: default
+  html_document:
+    toc: yes
+    
+params:
+  root_data_dir: "/Users/mkocher/pacbio-smrtlink-data"
+  smrtlink_system: "smrtlink-alpha"
+  created_at: !r lubridate::now()
+---
+
+# `r params$smrtlink_system` System DataSet Summary
+
+Load all DataSet types
+```{r load_libs, warning=FALSE}
+library(dplyr)
+library(scales)
+library(ggplot2)
+library(lubridate)
+library(jsonlite)
+library(tibble)
+library(purrr)
+library(tidyverse)
+library(stringr)
+library(readr)
+library(forcats)
+library(smrtlinkr)
+```
+
+
+```{r setup}
+
+system_name <- params$smrtlink_system
+created_at <- params$created_at
+root_data_dir <- params$root_data_dir
+
+summary_msg <- paste0("Created at ", created_at," with SMRT Link system ", system_name)
+print(summary_msg)
+
+smrtlink_status <- load_status_from_json_path(to_status_json_path(root_data_dir, system_name))
+print(smrtlink_status)
+
+to_system_ds_json_path <- function(ds_shortname) { return(to_ds_json_path(root_data_dir, system_name, ds_shortname))}
+
+# create these manually to refer to them later
+path_referenceset <-to_system_ds_json_path("references")
+path_subreadset <- to_system_ds_json_path("subreads") 
+path_ccsreads <- to_system_ds_json_path("ccsreads")
+path_alignmentset <- to_system_ds_json_path("alignments")
+path_barcodeset <- to_system_ds_json_path("barcodes")
+path_ccsalignments <- to_system_ds_json_path("ccsalignments")
+path_contigs <- to_system_ds_json_path("contigs")
+path_gmap_ref <- to_system_ds_json_path("gmapreferences")
+path_hdfsubreads <- to_system_ds_json_path("hdfsubreads")
+
+
+ds_paths <-
+  c(
+  path_referenceset,
+  path_subreadset,
+  path_ccsreads,
+  path_alignmentset,
+  path_barcodeset,
+  path_ccsalignments,
+  path_contigs,
+  path_gmap_ref,
+  path_hdfsubreads
+  )
+
+tdf <- load_dataset_metadata_from_json_paths(ds_paths)
+```
+
+## System DataSet Summary
+
+```{r}
+# Raw summary. There are many values that are negative due to bugs, or default values of -1
+tdf %>% to_summary_dataset() %>% print()
+```
+
+## System DataSet Summary By DataSet Type
+
+```{r}
+tdf %>% group_by(dataset_metatype) %>% summarize(total=n()) %>% print()
+```
+
+
+## System Summary DataSet By DataSet Version
+
+```{r}
+tdf %>% group_by(version) %>% summarize(total=n()) %>% print()
+```
+
+# SubreadSet Full Summary Details
+
+```{r}
+subread_df <- load_dataset_metadata_from_json_path(path_subreadset)
+to_full_summary_dataset(subread_df, "SubreadSet")
+```
+
+# ReferenceSet Full Summary Details
+
+```{r}
+ref_df <- load_dataset_metadata_from_json_path(path_referenceset)
+to_full_summary_dataset(ref_df, "ReferenceSet")
+```
+
+# GmapReferenceSet Full Summary
+
+```{r error=TRUE}
+# allow a little slop when there are no datasets
+gmap_df <- load_dataset_metadata_from_json_path(path_gmap_ref)
+to_full_summary_dataset(gmap_df, "GmapReferenceSet")
+```
+
+# ContigSet Full Summary
+
+```{r}
+contig_df <- load_dataset_metadata_from_json_path(path_contigs)
+to_full_summary_dataset(contig_df, "ContigSet")
+```
+
+# CCS Set Full Summary
+
+```{r}
+ccs_df <- load_dataset_metadata_from_json_path(path_ccsreads)
+to_full_summary_dataset(ccs_df, "CCSSet")
+```
+
+
+# Alignment Set Full Summary
+
+```{r}
+align_df <- load_dataset_metadata_from_json_path(path_alignmentset)
+to_full_summary_dataset(align_df, "AlignmentSet")
+```
+
+# CCS AlignmentSet Full Summary
+
+```{r}
+ccs_align_df <- load_dataset_metadata_from_json_path(path_ccsalignments)
+to_full_summary_dataset(ccs_align_df, "CCS AlignmentSet")
+```
+
+# HdfSubreadSet Full Summary
+
+```{r}
+hdf_df <- load_dataset_metadata_from_json_path(path_hdfsubreads)
+to_full_summary_dataset(hdf_df, "HdfSubreadSet")
+```

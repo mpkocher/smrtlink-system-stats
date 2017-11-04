@@ -1,0 +1,104 @@
+---
+title: "SMRT Link Log Request Summary"
+params:
+  created_at: !r lubridate::now()
+  csv_log_file: /Users/mkocher/pacbio-smrtlink-logs/smrtlink-alpha.csv
+  smrtlink_system: smrtlink-alpha
+output:
+  html_notebook: default
+  html_document:
+    toc: yes
+---
+
+
+```{r setup}
+
+library(smrtlinkr)
+library(tidyverse)
+
+smrtlink_system <- params$smrtlink_system
+created_at <- params$created_at
+csv_log_file <- params$csv_log_file
+
+summary_msg <- paste0("Created at ", created_at," with SMRT Link system ", smrtlink_system)
+print(summary_msg)
+
+edf <- smrtlinkr::load_csv_log_file(csv_log_file)
+
+event_most_recent <- max(edf$created_at)
+event_oldest <- min(edf$created_at)
+
+# Util func for plotting and summary
+log_summary_by_min_date <- function(min_date) {
+  recent_df <- edf %>% filter(created_at >= min_date)
+
+  recent_df %>%  summarise(
+    total_records=n(), 
+    event_most_recent=min(created_at),
+    event_oldest=max(created_at)) %>% print()
+
+  # All Request types
+  subtitle_all <- paste0("SMRT Link System ", smrtlink_system, " for HTTP requests")
+  recent_df %>% to_log_csv_plot_summary(60, subtitle = subtitle_all) %>% print()
+}
+
+edf %>% summarise(total_records=n(), event_most_recent=min(created_at), event_oldest=max(created_at)) %>% print()
+
+```
+
+# Latest 1 hours Requests
+
+```{r}
+log_summary_by_min_date(event_most_recent - dhours(1))
+```
+
+# Latest 3 hours Requests
+
+```{r}
+log_summary_by_min_date(event_most_recent - dhours(3))
+```
+
+# Latest 6 hours Requests
+
+```{r}
+log_summary_by_min_date(event_most_recent - dhours(6))
+```
+
+# Latest 12 hours Requests
+
+```{r}
+log_summary_by_min_date(event_most_recent - dhours(12))
+```
+
+# Latest 24 hours Requests
+
+```{r}
+log_summary_by_min_date( event_most_recent - ddays(1))
+```
+
+# Latest 48 hours Requests
+
+```{r}
+log_summary_by_min_date( event_most_recent - ddays(2))
+```
+
+
+# Last 3 days
+```{r}
+log_summary_by_min_date( event_most_recent - ddays(3))
+```
+
+# Last 7 days
+```{r}
+log_summary_by_min_date( event_most_recent - ddays(7))
+```
+
+# Last 30 days
+```{r}
+log_summary_by_min_date( event_most_recent - ddays(30))
+```
+
+# Last 60 days
+```{r}
+log_summary_by_min_date(event_most_recent - ddays(60))
+```
